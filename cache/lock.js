@@ -1,4 +1,5 @@
 import { redisClient } from "../config/redis"
+import { sleep } from "../utils/sleep.js";
 
 
 
@@ -14,7 +15,8 @@ export const acquireLockWithRetry = async ({
             //metrick lock++
             return true
         }
-        // await sleep(backoff)
+        const delay = backoff * Math.pow(2, i)
+        await sleep(delay)
     }
     // metriix lockfaild++
     return false
