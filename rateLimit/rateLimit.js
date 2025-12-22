@@ -1,5 +1,6 @@
 
-import { redisClient } from './../config/redis';
+import { redisClient } from './../config/redis.js';
+import { metrics } from './../metrics/counters.js';
 
 export const rateLimit = ({ windowSeconds, maxRequests, keyGenerator }) => {
     return async (req, res, next) => {
@@ -11,7 +12,7 @@ export const rateLimit = ({ windowSeconds, maxRequests, keyGenerator }) => {
         }
 
         if (count > maxRequests) {
-            //metric ratelimited++
+            metrics.rateLimited++
             return res.status(429).json({ message: "Too many requests" })
         }
         next();

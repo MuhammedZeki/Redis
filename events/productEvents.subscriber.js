@@ -1,5 +1,5 @@
-import { bumpCacheVersion } from '../cache/cacheVerion';
-import { redisClient } from './../config/redis';
+import { bumpCacheVersion } from '../cache/cacheVerion.js';
+import { redisClient } from './../config/redis.js';
 export const startProductEventSubscriber = async () => {
     const sub = redisClient.duplicate();
     await sub.connect();

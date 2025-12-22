@@ -1,5 +1,6 @@
-import { redisClient } from "../config/redis"
+import { redisClient } from "../config/redis.js"
 import { sleep } from "../utils/sleep.js";
+import { metrics } from './../metrics/counters.js';
 
 
 
@@ -12,15 +13,16 @@ export const acquireLockWithRetry = async ({
     for (let i = 0; i < retries; i++) {
         const ok = await redisClient.set(key, "locked", { NX: true, PX: ttl });
         if (ok) {
-            //metrick lock++
+            metrics.lockAcquired++
             return true
         }
         const delay = backoff * Math.pow(2, i)
         await sleep(delay)
     }
-    // metriix lockfaild++
+    metrics.lockFail++
     return false
 }
+
 export const releasedLock = async (key) => {
     await redisClient.del(key)
 }

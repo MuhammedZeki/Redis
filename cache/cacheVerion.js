@@ -1,4 +1,4 @@
-import { redisClient } from "../config/redis";
+import { redisClient } from "../config/redis.js";
 
 const VERSION_KEY = "product:cache:version";
 

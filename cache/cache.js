@@ -1,4 +1,5 @@
-import { redisClient } from "../config/redis"
+import { redisClient } from "../config/redis.js"
+import { metrics } from './../metrics/counters.js';
 
 
 export const setCache = async (key, data, tll) => {
@@ -9,7 +10,7 @@ export const setCache = async (key, data, tll) => {
             JSON.stringify({ data, fetchedAt: Date.now() })
         )
     } catch (error) {
-        //metric redis error
+        metrics.redisError++
     }
 }
 
@@ -17,23 +18,23 @@ export const getCacheWithSWR = async ({ key, freshMs, staleMs }) => {
     try {
         const raw = await redisClient.get(key)
         if (!raw) {
-            // cache miss
+            metrics.cacheMiss++
             return { hit: false }
         }
-        /// metric hit
+        metrics.cacheHit++
         const parsed = JSON.parse(raw)
         const age = Date.now() - parsed.fetchedAt // 20:05:25 - 20:05:20 -->50sn 
-        if (age > freshMs) // metric cachestaleserved ++
+        if (age > freshMs) metrics.cacheStaledServed++
 
 
-            return {
-                hit: true,
-                data: parsed.data,
-                isFresh: age <= freshMs,
-                isStaleAllowed: age <= staleMs
-            }
+        return {
+            hit: true,
+            data: parsed.data,
+            isFresh: age <= freshMs,
+            isStaleAllowed: age <= staleMs
+        }
     } catch (error) {
-        //metric rediserror++
+        metrics.redisError++
         return { hit: false }
     }
 }
