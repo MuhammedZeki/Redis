@@ -1,16 +1,21 @@
 import express from "express"
-import { rateLimit } from "../rateLimit/rateLimit.js";
-import { listProducts } from "../controllers/product.controller.js";
+import { createdProduct, deleteProduct, listProducts, updateProduct } from "../controllers/product.controller.js";
+import { productCreateLimit, productReadLimit } from "../middlewares/rateLimitEvent.js";
 
 const router = express.Router();
 
 router.get("/",
-    rateLimit({
-        windowSeconds: 60,
-        maxRequests: 5,
-        keyGenerator: (req) => `rate:products:${req.ip}:${req.user?.id || "guest"}`
-    }),
+    productReadLimit,
     listProducts
 )
+
+router.post("/create",
+    productCreateLimit,
+    createdProduct
+)
+
+router.put("/product-update/:id", updateProduct)
+
+router.delete("/product-delete/:id", deleteProduct)
 
 export default router

@@ -1,7 +1,9 @@
 import { getCacheWithSWR, setCache } from '../cache/cache.js';
+import { publishEvent } from '../events/publishEvent.js';
 import { productListKey } from './../cache/cacheKeys.js';
 import { acquireLockWithRetry, releasedLock } from './../cache/lock.js';
 import { Product } from './../models/Product.model.js';
+import { PRODUCT_EVENT } from './../events/productEvent.js';
 
 export const listProducts = async (req, res) => {
 
@@ -38,6 +40,57 @@ export const listProducts = async (req, res) => {
     }
 
 }
+
+export const createdProduct = async (req, res) => {
+    const product = await Product.create(req.body)
+
+    await publishEvent("product-events", {
+        type: PRODUCT_EVENT.CREATED,
+        productId: product._id.toString(),
+        at: Date.now(),
+    })
+
+    res.status(201).json({ message: "Product_Created", data: product })
+}
+
+export const updateProduct = async (req, res) => {
+    const { id } = req.params;
+
+    const product = await Product.findByIdAndUpdate(id, req.body, {
+        new: true,
+    });
+
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
+    await publishEvent("product-events", {
+        type: PRODUCT_EVENT.UPDATED,
+        productId: product._id.toString(),
+        at: Date.now(),
+    });
+
+    return res.status(200).json({ events: PRODUCT_EVENT.UPDATED, data: product });
+};
+
+export const deleteProduct = async (req, res) => {
+    const { id } = req.params;
+
+    const product = await Product.findByIdAndDelete(id);
+
+    if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+    }
+
+    await publishEvent("product-events", {
+        type: PRODUCT_EVENT.DELETED,
+        productId: product._id.toString(),
+        at: Date.now(),
+    });
+
+    res.status(204).json({ events: PRODUCT_EVENT.DELETED, data: product });
+};
+
 
 const revalidate = async (page, key, lockKey) => {
     const locked = await acquireLockWithRetry({ key: lockKey });
