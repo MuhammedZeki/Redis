@@ -28,7 +28,7 @@ export const getCacheWithSWR = async ({ key, freshMs, staleMs }) => {
 
             return {
                 hit: true,
-                data: PaymentAddress.data,
+                data: parsed.data,
                 isFresh: age <= freshMs,
                 isStaleAllowed: age <= staleMs
             }
