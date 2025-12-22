@@ -14,6 +14,11 @@ export const setCache = async (key, data, tll) => {
     }
 }
 
+export const getCache = async (key) => {
+    const data = await redisClient.get(key);
+    return data ? JSON.parse(data) : null;
+}
+
 export const getCacheWithSWR = async ({ key, freshMs, staleMs }) => {
     try {
         const raw = await redisClient.get(key)

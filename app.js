@@ -1,7 +1,7 @@
 import express from "express"
 
 import productRoutes from "./routes/product.routes.js"
-import metricRoutes from "./routes/product.routes.js"
+import metricRoutes from "./routes/metrics.routes.js"
 
 export const app = express();
 app.use(express.json());

@@ -1,9 +1,10 @@
-import { getCacheWithSWR, setCache } from '../cache/cache.js';
+import { getCache, getCacheWithSWR, setCache } from '../cache/cache.js';
 import { publishEvent } from '../events/publishEvent.js';
-import { productListKey } from './../cache/cacheKeys.js';
+import { productDetailKey, productListKey } from './../cache/cacheKeys.js';
 import { acquireLockWithRetry, releasedLock } from './../cache/lock.js';
 import { Product } from './../models/Product.model.js';
 import { PRODUCT_EVENT } from './../events/productEvent.js';
+import { indexProductsToPages } from '../cache/reverseIndex.js';
 
 export const listProducts = async (req, res) => {
 
@@ -34,11 +35,30 @@ export const listProducts = async (req, res) => {
     try {
         const data = await Product.find().limit(20).lean();
         await setCache(key, data, 120);
+        await indexProductsToPages(data, page) // ürünü pages bazlı silmek
         return res.json({ source: "database", data });
     } finally {
         await releasedLock(lockKey);
     }
 
+}
+
+export const getProductDetail = async (req, res) => {
+    const { id } = req.params
+    const key = await productDetailKey(id);
+
+    const cached = await getCache(key);
+    if (cached) {
+        return res.json({ source: "cache", data: cached })
+    }
+
+    const product = await Product.findById(id).lean();
+
+    if (!product) res.status(404).json({ message: "Product not found" });
+
+    await setCache(key, product, 120)
+
+    return res.json({ source: "database", data: product })
 }
 
 export const createdProduct = async (req, res) => {
@@ -99,6 +119,7 @@ const revalidate = async (page, key, lockKey) => {
     try {
         const data = await Product.find().limit(20).lean()
         await setCache(key, data, 120)
+        await indexProductsToPages(data, page)
     } finally {
         await releasedLock(lockKey)
     }

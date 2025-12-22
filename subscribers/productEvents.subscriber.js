@@ -1,4 +1,5 @@
 import { bumpCacheVersion } from '../cache/cacheVerion.js';
+import { invalidateTargeted } from '../cache/invalidateTargeted.js';
 import { redisClient } from '../config/redis.js';
 import { PRODUCT_EVENT } from '../events/productEvent.js';
 export const startProductEventSubscriber = async () => {
@@ -7,12 +8,15 @@ export const startProductEventSubscriber = async () => {
 
     await sub.subscribe("product-events", async (msg) => {
         const event = JSON.parse(msg);
-        if (
-            event.type === PRODUCT_EVENT.CREATED ||
-            event.type === PRODUCT_EVENT.DELETED ||
-            event.type === PRODUCT_EVENT.UPDATED
-        ) {
-            await bumpCacheVersion();
+        switch (event.type) {
+            case PRODUCT_EVENT.CREATED:
+                await bumpCacheVersion(); // Sıralama bozulur
+                break;
+
+            case PRODUCT_EVENT.UPDATED:
+            case PRODUCT_EVENT.DELETED:
+                await invalidateTargeted(event.productId);
+                break;
         }
     })
 }
