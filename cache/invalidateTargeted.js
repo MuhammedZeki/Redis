@@ -7,7 +7,7 @@ export const invalidateTargeted = async (productId) => {
 
     pipeline.del(`product:details:${productId}`)
 
-    const pages = await redisClient.sMembers(`product:pages:${productId}`) //Hangi page’lerde var? pro:pages:abc = {"1","2"}
+    const pages = await redisClient.sMembers(`product:pages:${productId}`) //Hangi page’lerde var? pro:pages:123ıd = {"1","2"}
 
     for (const page of pages) {
         pipeline.del(`products:page:${page}`);

@@ -27,8 +27,8 @@ export const listProducts = async (req, res) => {
         return res.json({ source: "cache:stale", data: cache.data })
     }
 
-    const locked = await acquireLockWithRetry({ key: lockKey });
-    if (!locked) {
+    const token = await acquireLockWithRetry({ key: lockKey });
+    if (!token) {
         return res.status(503).json({ message: "Please retry" });
     }
 
@@ -38,7 +38,7 @@ export const listProducts = async (req, res) => {
         await indexProductsToPages(data, page) // ürünü pages bazlı silmek
         return res.json({ source: "database", data });
     } finally {
-        await releasedLock(lockKey);
+        await releasedLock(lockKey, token);
     }
 
 }
@@ -48,13 +48,20 @@ export const getProductDetail = async (req, res) => {
     const key = await productDetailKey(id);
 
     const cached = await getCache(key);
+    //Navigate
+    if (cached === null) {
+        return res.status(404).json({ message: "Product bot found" })
+    }
     if (cached) {
         return res.json({ source: "cache", data: cached })
     }
 
     const product = await Product.findById(id).lean();
 
-    if (!product) res.status(404).json({ message: "Product not found" });
+    if (!product) {
+        await setCache(key, null, 30) //null cache
+        res.status(404).json({ message: "Product not found" });
+    }
 
     await setCache(key, product, 120)
 

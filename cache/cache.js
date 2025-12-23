@@ -2,11 +2,13 @@ import { redisClient } from "../config/redis.js"
 import { metrics } from './../metrics/counters.js';
 
 
-export const setCache = async (key, data, tll) => {
+export const setCache = async (key, data, baseTTL) => {
+    const jitter = Math.floor(Math.random() * 30)
+    const ttl = baseTTL + jitter // her cache için farklı saniyede ttl verdik aynı anda bitmiyor 
     try {
         await redisClient.setEx(
             key,
-            tll,
+            ttl,
             JSON.stringify({ data, fetchedAt: Date.now() })
         )
     } catch (error) {
