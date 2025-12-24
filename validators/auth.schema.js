@@ -14,3 +14,19 @@ export const loginSchema = z.object({
         password: z.string().min(8),
     })
 });
+
+export const resetTokenQuerySchema = z.object({
+    token: z
+        .string()
+        .min(20, "Invalid token")
+        .max(128, "Invalid token"),
+});
+
+export const resetPasswordBodySchema = z.object({
+    token: z.string().min(20),
+    newPassword: z
+        .string()
+        .min(8, "Password too short")
+        .regex(/[A-Z]/, "Must contain uppercase letter")
+        .regex(/[0-9]/, "Must contain number"),
+});

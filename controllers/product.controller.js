@@ -69,27 +69,32 @@ export const getProductDetail = async (req, res) => {
 }
 
 export const createdProduct = async (req, res) => {
-    const product = await Product.create(req.body)
+    try {
 
-    await publishEvent("product-events", {
-        type: PRODUCT_EVENT.CREATED,
-        productId: product._id.toString(),
-        at: Date.now(),
-    })
+        const newProduct = await Product.create({
+            ...req.body,
+            owner: req.user.id // requiredAuth middleware'inden gelen ID
+        });
 
-    res.status(201).json({ message: "Product_Created", data: product })
+        await publishEvent("product-events", {
+            type: PRODUCT_EVENT.CREATED,
+            productId: product._id.toString(),
+            at: Date.now(),
+        })
+
+        res.status(201).json({ message: "Product_Created", data: newProduct })
+    } catch (error) {
+        res.status(500).json({ message: "Ürün oluşturulamadı" });
+    }
 }
 
 export const updateProduct = async (req, res) => {
-    const { id } = req.params;
+    const { name, price } = req.body
+    const product = req.product
 
-    const product = await Product.findByIdAndUpdate(id, req.body, {
-        new: true,
-    });
 
-    if (!product) {
-        return res.status(404).json({ message: "Product not found" });
-    }
+    Object.assign(product, { name, price })
+    await product.save();
 
     await publishEvent("product-events", {
         type: PRODUCT_EVENT.UPDATED,
